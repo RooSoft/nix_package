@@ -10,6 +10,7 @@
   mixFodDeps = erlangPackages.fetchMixDeps {
     inherit version src;
     pname = "nix-package-deps";
+    sha256 = "sha256-8xtajA9XAVbzBta0ps+/16TiweZuvXIznuJyuKh6Vs0=";
   };
   translatedPlatform =
     {
