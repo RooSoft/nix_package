@@ -1,3 +1,14 @@
+## How this project has been created
+
+```bash
+mix phx.new nix_package --live
+```
+
+And then added `flake.nix`, `shell.nix` and `package.nix`
+
+No other modification whatsoever
+
+
 ## How to make this project fail
 
 ```bash
