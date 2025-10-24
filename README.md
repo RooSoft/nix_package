@@ -1,4 +1,15 @@
-## How this project has been created
+## Introduction
+
+I was trying to make a basic Phoenix LiveView app that's packaged for NixOS.
+
+[Discussion about it on the elixir forum](https://elixirforum.com/t/creating-a-nix-package-for-a-basic-liveview-app/73058)
+
+The solution turned out to be [Flakify](https://hexdocs.pm/flakify).
+
+
+## Initial problem
+
+#### How this project has been created
 
 ```bash
 mix phx.new nix_package --live
@@ -9,7 +20,7 @@ And then added `flake.nix`, `shell.nix` and `package.nix`
 No other modification whatsoever
 
 
-## How to make this project fail
+#### How to make this project fail
 
 ```bash
 nix build .
@@ -48,3 +59,16 @@ error: builder for '/nix/store/zc9a32jdw8fsd9zinx66l3v8pddkvdy3-nix_package-0.1.
        For full logs, run:
          nix log /nix/store/zc9a32jdw8fsd9zinx66l3v8pddkvdy3-nix_package-0.1.0.drv
 ```
+
+## Solution
+
+- Remove all .nix files
+- Run these commands
+
+```bash
+mix archive.install hex igniter_new
+mix igniter.install flakify --package
+```
+
+[This commit](https://github.com/RooSoft/nix_package/commit/6de929f04c6424deb4bd2362d909c6ae86c9d7b9)
+represents what happened after those two commands, with some added modification to `.gitgnore` 
