@@ -1,49 +1,53 @@
 {
-  description = "A very basic flake";
+  inputs = { nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable"; };
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    npmlock2nix = {
-      url = "github:nix-community/npmlock2nix";
-      flake = false;
+  outputs = inputs:
+    let
+      supportedSystems =
+        [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forEachSupportedSystem = f:
+        inputs.nixpkgs.lib.genAttrs supportedSystems
+        (system: f { pkgs = import inputs.nixpkgs { inherit system; }; });
+      commonEnv = pkgs: {
+        MIX_TAILWIND_PATH = pkgs.lib.getExe pkgs.tailwindcss_4;
+        MIX_ESBUILD_PATH = pkgs.lib.getExe pkgs.esbuild;
+      };
+
+      beam_pkgs = pkgs: pkgs.beam.packagesWith pkgs.beam.interpreters.erlang;
+    in {
+      devShells = forEachSupportedSystem ({ pkgs }: {
+        default = pkgs.mkShell {
+          packages =
+            (if pkgs.stdenv.isLinux then [ pkgs.inotify-tools ] else [ ]) ++
+              [ (beam_pkgs pkgs).elixir pkgs.tailwindcss_4 pkgs.esbuild ];
+          env = commonEnv pkgs;
+        };
+      });
+
+      packages = forEachSupportedSystem ({ pkgs }: rec {
+        nix_package = let
+          mixNixDeps = pkgs.callPackages ./deps.nix { };
+          pname = "nix_package";
+          version = "0.0.1";
+        in (beam_pkgs pkgs).mixRelease {
+          inherit pname version mixNixDeps;
+          src = pkgs.lib.cleanSource ./.;
+          env = commonEnv pkgs;
+
+          postBuild = ''
+            # As shown in
+            # https://github.com/code-supply/nix-phoenix/blob/2ab9b2f63dd85d5d6a85d61bd4fc5c6d07f65643/flake-template/flake.nix#L62-L64
+            ln -sfv ${mixNixDeps.heroicons} deps/heroicons
+
+            mix do \
+              loadpaths --no-deps-check, \
+              assets.deploy --no-deps-check
+          '';
+
+          meta.mainProgram = "server";
+        };
+        default = nix_package;
+      });
+
     };
-  };
-
-  outputs = {
-    nixpkgs,
-    flake-utils,
-    npmlock2nix,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (
-      system: let
-        base_pkgs = import nixpkgs {
-          inherit system;
-          config.allowUnfree = true;
-        };
-
-        pkgs = base_pkgs.extend fixnpm2nix;
-
-        # Elixir and related tools
-        erl = pkgs.beam.interpreters.erlang_28;
-        erlangPackages = pkgs.beam.packagesWith erl;
-        elixir = erlangPackages.elixir;
-
-        fixnpm2nix = final: prev: {
-          nodejs-16_x = prev.nodePackages.nodejs;
-        };
-        
-        npm2nix = pkgs.callPackage npmlock2nix {};
-        nodejs = pkgs.nodejs_22;
-
-        devShell = import ./shell.nix {inherit pkgs elixir nodejs;};
-
-        package = import ./package.nix {inherit system pkgs erlangPackages elixir nodejs npm2nix;};
-      in {
-        packages = package;
-
-        devShells.default = devShell;
-      }
-    );
 }

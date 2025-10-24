@@ -35,3 +35,4 @@ nix_package-*.tar
 npm-debug.log
 /assets/node_modules/
 
+result

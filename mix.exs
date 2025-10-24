@@ -40,6 +40,7 @@ defmodule NixPackage.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:deps_nix, "~> 2.5"},
       {:phoenix, "~> 1.8.1"},
       {:phoenix_ecto, "~> 4.5"},
       {:ecto_sql, "~> 3.13"},
@@ -88,7 +89,8 @@ defmodule NixPackage.MixProject do
         "esbuild nix_package --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: ["compile --warning-as-errors", "deps.unlock --unused", "format", "test"],
+      "deps.get": ["deps.get", "deps.nix"]
     ]
   end
 end
